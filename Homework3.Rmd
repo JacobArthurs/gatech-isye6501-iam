@@ -1,0 +1,145 @@
+---
+title: "ISYE 6501 Homework 3"
+output: pdf_document
+date: "2025-01-30"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+uscrime <- read.table("uscrime.txt", header = TRUE, sep = "\t")
+temps <- read.table("temps.txt", header = TRUE, sep = "\t")
+library(outliers)
+library(ggplot2)
+```
+# Question 5.1
+### Perform the Grubbs test on max value
+```{r}
+grubbs.test(uscrime$Crime)
+```
+The p-value is 0.07997, which is higher than 0.05. Therefore, we can conclude that the max value of the crime column in the uscrime data set, 1993, is not likely an outlier. We fail to reject the null hypothesis that the value 1993 is not an outlier, and therefore we cannot accept the alternative hypothesis that the value 1993 is an outlier.
+
+### Perform the Grubbs test on min value
+```{r}
+grubbs.test(uscrime$Crime, opposite = TRUE)
+```
+The p-value is 1, which is higher than 0.05. A p-value of 1 equates to a 100% certainty that the min value of the crime column in the uscrime data set, 342, is not likely an outlier. We fail to reject the null hypothesis that the value 342 is not an outlier, and therefore we cannot accept the alternative hypothesis that the value 342 is an outlier.
+
+### Perform the Grubbs test on both sides (min and max)
+```{r}
+grubbs.test(uscrime$Crime, type = 11)
+```
+The p-value is 1, which is higher than 0.05. A p-value of 1 equates to a 100% certainty that the min and max value of the uscrime data set, 342 and 1993, are not likely both outliers. We fail to reject the null hypothesis that the values 342 and 1993 are not outliers, and therefore we cannot accept the alternative hypothesis that the values 342 and 1993 are outliers.
+
+### Conclusion
+After testing the max, the min, and both sides simultaneously using the grubbs test, we can conclude that there are likely no significant outliers present in the data set. This is based on the p-value of each grubbs test. If a p-value is greater than 0.05, then the outlier is not statistically significant. If a p-value is less than 0.05, then the outlier is statistically signifigant. In all tests, the p-values were greater than 0.05, so we fail to reject all null hypotheses and cannot accept any alternative hypotheses.
+
+---
+
+# Question 6.1
+An area in which a change detection model would be beneficial in my job is monitoring account login times. If accounts start taking an unusually long amount of time to login, we can conclude something is wrong with the system. The problem could indicate that the server is being overloaded, there's a bug in the software, or even that a cyberattack is occurring.
+
+Choosing the critical value, or the acceptable level of deviation from the mean, we could pick a value such as 2.5. This critical value would define the minimum value that would be considered significant. This would filter out small, and insignificant deviations. All values less than the mean + 2.5 would not be considered and would not be added to the cumulative sum.
+
+Choosing a threshold value, or the sum that must be exceeded for a change to be detected, we could pick a value such as 5. This would mean that if login consistently exceeds the mean + critical value, then the cumulative sum will grow and surpass the threshold, signaling a change. It's important not to have the threshold too small, as this would cause it to be too sensitive and cause false positive changes.
+
+It's also important to note that we only care about detecting an increase in login time. A decrease in login time does not indicate any problem in the system.
+
+
+\[
+S_t = \max(0, S_{t-1} + (x_t - \mu - C))
+\]
+\[
+\text{Change detected if } S_t \geq T
+\]
+\[
+\text{Set variables: }  
+C = 2.5, \text{(critical value) }  
+T = 5, \text{(threshold) }  
+\]
+\[
+S_t = \max(0, S_{t-1} + (x_t - \mu + 2.5))
+\]
+\[
+\text{Change detected if } S_t \geq 5
+\]
+
+---
+
+# Question 6.2.1
+### Pivot the data such that year is a column.
+```{r}
+temps_pivot <- reshape(temps, 
+                      varying = list(names(temps)[2:ncol(temps)]), 
+                      v.names = "Temperature", 
+                      timevar = "Year", 
+                      times = names(temps)[2:ncol(temps)], 
+                      direction = "long")
+
+head(temps_pivot)
+```
+
+### Perform grubs test to check for outliers
+```{r}
+# Check min value
+grubbs.test(temps_pivot$Temperature)
+
+# Check max value
+grubbs.test(temps_pivot$Temperature, opposite = TRUE)
+
+# Check min/max value
+grubbs.test(temps_pivot$Temperature, type = 11)
+```
+As you can see above, the p-value for all 3 tests is greater than 0.05, and therefore are not considered to be significant outliers. We fail to reject all null hypotheses and cannot accept any alternative hypotheses.
+
+
+### Calculate mean, and standard deviation, and then use standard deviation to calcule C (critical value) and T (threshold)
+```{r}
+mean <- mean(temps_pivot$Temperature)
+cat("Mean:", mean, "\n")
+
+standard_deviation <- sd(temps_pivot$Temperature)
+cat("Standard deviation:", standard_deviation, "\n")
+
+critical_value <- 0.5 * standard_deviation
+cat("Critical value:", critical_value, "\n")
+
+threshold <- 5 * standard_deviation
+cat("Threshold:", threshold, "\n")
+```
+
+### Loop over each year, calculate the cumulative sum, and add the summer end to temps_summer_end
+```{r}
+temps_summer_end <- data.frame()
+
+for (year in unique(temps_pivot$Year)) {
+  grouped_year_data <- temps_pivot[temps_pivot$Year == year, ]
+  
+  cum_sum <- cumsum(mean - grouped_year_data$Temperature - critical_value)
+  
+  summer_end <- min(which(abs(cum_sum) > threshold))
+  
+  date <- grouped_year_data$DAY[summer_end]
+  
+  temps_summer_end <- rbind(temps_summer_end, data.frame(Year = as.numeric(substring(year, 2)),
+                                                         Summer_End = summer_end, Date = date))
+}
+
+print(temps_summer_end)
+```
+
+### Graph the summer end dates, and put a line of best fit to see trend
+```{r}
+ggplot(data = temps_summer_end, aes(x = Year, y = Summer_End)) +
+  geom_point() +
+  geom_line() +
+  geom_text(aes(label = Date), vjust = -0.5, size = 3) +
+  geom_smooth(method = "lm", color = "red", linetype = "dashed", se = FALSE) +
+  labs(
+    x = "Year",
+    y = "Day of the Year"
+  )
+```
+---
+
+# Question 6.2.2
+As you can see, the line of best fit above is trending upward. From this we can conclude that summer's length has increased over time. It appears this trend is present throughout the data set and can therefore be concluded that the trend began before the data was collected. However, the slope of this line of best fit is only slightly positive. Therefore, we can conclude that the summer's length has only marginally increased and may be likely due to randomness in the data. We may need more data to draw any conclusions.

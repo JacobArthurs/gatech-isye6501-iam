@@ -1,0 +1,146 @@
+---
+title: "ISYE 6501 Homework 9"
+author: "Jacob Arthurs"
+date: "2025-03-13"
+output: pdf_document
+---
+
+```{r, set.seed(1), setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(FrF2)
+```
+
+# Question 12.1
+At my job, I work with thousands of lines of code, and it's very important to test them to ensure they are safe and are optimized. A design of experiments approach would be helpful for optimizing different modules. By testing various coding techniques, configurations, or environments on a representative subset of the code, I can determine the most effective solutions to improve efficiency and reliability, minimizing risks and ensuring high-quality outcomes across the entire system.
+
+# Question 12.2
+
+```{r}
+FrF2(16, 10)
+```
+As you can see above, the design is created and can be interpreted to mean that any factor with a value of -1 is not to be included, while any factor with a value of 1 is to be included.
+
+# Question 13.1
+
+Below are examples for each distribution
+
+1. **Binomial**: The number of scratch-off lottery tickets purchased out of 10 trials until a win is found.
+2. **Geometric**: The number of d20 dice rolls until a 4 is rolled.
+3. **Poisson**: The number of cars that go through a tollbooth in an hour.
+4. **Exponential**: The time between arrivals at a public transit train station.
+5. **Weibull**: The time between each house fly generational lifespan.
+
+# Question 13.2
+
+## Code
+
+\newpage
+
+## Results
+
+```{text}
+Fail: 1 ID checkers, 1 personal queues -> Avg wait: 362.52 min
+Fail: 1 ID checkers, 2 personal queues -> Avg wait: 367.50 min
+Fail: 1 ID checkers, 3 personal queues -> Avg wait: 370.61 min
+Fail: 1 ID checkers, 4 personal queues -> Avg wait: 360.97 min
+Fail: 1 ID checkers, 5 personal queues -> Avg wait: 360.85 min
+Fail: 1 ID checkers, 6 personal queues -> Avg wait: 353.35 min
+Fail: 1 ID checkers, 7 personal queues -> Avg wait: 351.56 min
+Fail: 1 ID checkers, 8 personal queues -> Avg wait: 356.33 min
+Fail: 1 ID checkers, 9 personal queues -> Avg wait: 375.97 min
+Fail: 1 ID checkers, 10 personal queues -> Avg wait: 371.02 min
+Fail: 2 ID checkers, 1 personal queues -> Avg wait: 367.40 min
+Fail: 2 ID checkers, 2 personal queues -> Avg wait: 237.37 min
+Fail: 2 ID checkers, 3 personal queues -> Avg wait: 232.74 min
+Fail: 2 ID checkers, 4 personal queues -> Avg wait: 231.83 min
+Fail: 2 ID checkers, 5 personal queues -> Avg wait: 238.29 min
+Fail: 2 ID checkers, 6 personal queues -> Avg wait: 249.56 min
+Fail: 2 ID checkers, 7 personal queues -> Avg wait: 244.27 min
+Fail: 2 ID checkers, 8 personal queues -> Avg wait: 221.35 min
+Fail: 2 ID checkers, 9 personal queues -> Avg wait: 245.97 min
+Fail: 2 ID checkers, 10 personal queues -> Avg wait: 234.10 min
+Fail: 3 ID checkers, 1 personal queues -> Avg wait: 364.73 min
+Fail: 3 ID checkers, 2 personal queues -> Avg wait: 221.25 min
+Fail: 3 ID checkers, 3 personal queues -> Avg wait: 118.00 min
+Fail: 3 ID checkers, 4 personal queues -> Avg wait: 131.80 min
+Fail: 3 ID checkers, 5 personal queues -> Avg wait: 110.64 min
+Fail: 3 ID checkers, 6 personal queues -> Avg wait: 84.64 min
+Fail: 3 ID checkers, 7 personal queues -> Avg wait: 97.19 min
+Fail: 3 ID checkers, 8 personal queues -> Avg wait: 104.88 min
+Fail: 3 ID checkers, 9 personal queues -> Avg wait: 87.54 min
+Fail: 3 ID checkers, 10 personal queues -> Avg wait: 89.18 min
+Fail: 4 ID checkers, 1 personal queues -> Avg wait: 366.25 min
+Fail: 4 ID checkers, 2 personal queues -> Avg wait: 230.49 min
+Fail: 4 ID checkers, 3 personal queues -> Avg wait: 108.01 min
+Pass: 4 ID checkers, 4 personal queues -> Avg wait: 4.61 min
+Pass: 4 ID checkers, 5 personal queues -> Avg wait: 4.27 min
+Pass: 4 ID checkers, 6 personal queues -> Avg wait: 5.27 min
+Pass: 4 ID checkers, 7 personal queues -> Avg wait: 4.62 min
+Pass: 4 ID checkers, 8 personal queues -> Avg wait: 8.69 min
+Pass: 4 ID checkers, 9 personal queues -> Avg wait: 3.50 min
+Pass: 4 ID checkers, 10 personal queues -> Avg wait: 3.42 min
+Fail: 5 ID checkers, 1 personal queues -> Avg wait: 371.74 min
+Fail: 5 ID checkers, 2 personal queues -> Avg wait: 232.00 min
+Fail: 5 ID checkers, 3 personal queues -> Avg wait: 108.90 min
+Pass: 5 ID checkers, 4 personal queues -> Avg wait: 2.91 min
+Pass: 5 ID checkers, 5 personal queues -> Avg wait: 2.41 min
+Pass: 5 ID checkers, 6 personal queues -> Avg wait: 2.19 min
+Pass: 5 ID checkers, 7 personal queues -> Avg wait: 2.22 min
+Pass: 5 ID checkers, 8 personal queues -> Avg wait: 2.22 min
+Pass: 5 ID checkers, 9 personal queues -> Avg wait: 2.22 min
+Pass: 5 ID checkers, 10 personal queues -> Avg wait: 2.22 min
+Fail: 6 ID checkers, 1 personal queues -> Avg wait: 358.38 min
+Fail: 6 ID checkers, 2 personal queues -> Avg wait: 226.13 min
+Fail: 6 ID checkers, 3 personal queues -> Avg wait: 88.02 min
+Pass: 6 ID checkers, 4 personal queues -> Avg wait: 3.50 min
+Pass: 6 ID checkers, 5 personal queues -> Avg wait: 2.14 min
+Pass: 6 ID checkers, 6 personal queues -> Avg wait: 2.04 min
+Pass: 6 ID checkers, 7 personal queues -> Avg wait: 1.99 min
+Pass: 6 ID checkers, 8 personal queues -> Avg wait: 1.99 min
+Pass: 6 ID checkers, 9 personal queues -> Avg wait: 2.00 min
+Pass: 6 ID checkers, 10 personal queues -> Avg wait: 1.98 min
+Fail: 7 ID checkers, 1 personal queues -> Avg wait: 364.06 min
+Fail: 7 ID checkers, 2 personal queues -> Avg wait: 242.37 min
+Fail: 7 ID checkers, 3 personal queues -> Avg wait: 105.18 min
+Pass: 7 ID checkers, 4 personal queues -> Avg wait: 3.27 min
+Pass: 7 ID checkers, 5 personal queues -> Avg wait: 2.05 min
+Pass: 7 ID checkers, 6 personal queues -> Avg wait: 1.96 min
+Pass: 7 ID checkers, 7 personal queues -> Avg wait: 1.96 min
+Pass: 7 ID checkers, 8 personal queues -> Avg wait: 1.97 min
+Pass: 7 ID checkers, 9 personal queues -> Avg wait: 1.95 min
+Pass: 7 ID checkers, 10 personal queues -> Avg wait: 1.96 min
+Fail: 8 ID checkers, 1 personal queues -> Avg wait: 369.51 min
+Fail: 8 ID checkers, 2 personal queues -> Avg wait: 240.51 min
+Fail: 8 ID checkers, 3 personal queues -> Avg wait: 103.84 min
+Pass: 8 ID checkers, 4 personal queues -> Avg wait: 3.12 min
+Pass: 8 ID checkers, 5 personal queues -> Avg wait: 2.06 min
+Pass: 8 ID checkers, 6 personal queues -> Avg wait: 1.96 min
+Pass: 8 ID checkers, 7 personal queues -> Avg wait: 1.94 min
+Pass: 8 ID checkers, 8 personal queues -> Avg wait: 1.93 min
+Pass: 8 ID checkers, 9 personal queues -> Avg wait: 1.92 min
+Pass: 8 ID checkers, 10 personal queues -> Avg wait: 1.98 min
+Fail: 9 ID checkers, 1 personal queues -> Avg wait: 365.74 min
+Fail: 9 ID checkers, 2 personal queues -> Avg wait: 243.19 min
+Fail: 9 ID checkers, 3 personal queues -> Avg wait: 100.58 min
+Pass: 9 ID checkers, 4 personal queues -> Avg wait: 2.98 min
+Pass: 9 ID checkers, 5 personal queues -> Avg wait: 2.01 min
+Pass: 9 ID checkers, 6 personal queues -> Avg wait: 1.96 min
+Pass: 9 ID checkers, 7 personal queues -> Avg wait: 1.93 min
+Pass: 9 ID checkers, 8 personal queues -> Avg wait: 1.95 min
+Pass: 9 ID checkers, 9 personal queues -> Avg wait: 1.93 min
+Pass: 9 ID checkers, 10 personal queues -> Avg wait: 1.94 min
+Fail: 10 ID checkers, 1 personal queues -> Avg wait: 367.97 min
+Fail: 10 ID checkers, 2 personal queues -> Avg wait: 224.25 min
+Fail: 10 ID checkers, 3 personal queues -> Avg wait: 106.53 min
+Pass: 10 ID checkers, 4 personal queues -> Avg wait: 3.21 min
+Pass: 10 ID checkers, 5 personal queues -> Avg wait: 2.02 min
+Pass: 10 ID checkers, 6 personal queues -> Avg wait: 1.94 min
+Pass: 10 ID checkers, 7 personal queues -> Avg wait: 1.91 min
+Pass: 10 ID checkers, 8 personal queues -> Avg wait: 1.92 min
+Pass: 10 ID checkers, 9 personal queues -> Avg wait: 1.92 min
+Pass: 10 ID checkers, 10 personal queues -> Avg wait: 1.93 min
+Optimal: 10 ID checkers, 7 personal queues -> Avg wait: 1.91 min
+Minimum: 4 ID checkers, 4 personal queues -> Avg wait: 4.61 min
+```
+
+As you can see above, the optimal configuration (lowest wait time) is 10 ID checkers and 7 personal queues. The minimum configuration (lowest ID checkers + personal queues) is 4 ID checkers and 4 personal queues. There is randomness involved in the simulation, and therefore, it can be concluded that anything above 10 ID checkers and 5 personal queues performs roughly the same. From the results, we can also see that there is a significant bottleneck with ID checkers. If there are fewer than 4 ID checkers, the process automatically fails. Adding more personal queues does not make much of an impact unless the number of ID checkers is sufficiently large.

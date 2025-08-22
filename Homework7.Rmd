@@ -1,0 +1,242 @@
+---
+title: "ISYE 6501 Homework 7"
+date: "2025-02-27"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+uscrime <- read.table("uscrime.txt", header = TRUE, sep = "\t")
+germancredit <- read.table("germancredit.txt", header = FALSE, sep = " ")
+set.seed(1)
+library(tree)
+library(randomForest)
+```
+# Question 10.1
+
+## Section A
+
+### To begin, we will split the data into train and test subsets
+```{r}
+# 80% training and 20% testing
+uscrime_train_sample <- sample(1:nrow(uscrime), size = 0.8 * nrow(uscrime))
+uscrime_train_data <- uscrime[uscrime_train_sample, ]
+uscrime_test_data <- uscrime[-uscrime_train_sample, ]
+```
+
+### Make a regression tree model
+```{r}
+uscrime_tree <- tree(Crime ~ ., data=uscrime_train_data)
+
+summary(uscrime_tree)
+```
+As you can see, we branched on the predictors NW, Po1, M.F, and Prop, And we finished with 6 leaf nodes.
+
+### Illustrate tree branching
+```{r}
+plot(uscrime_tree)
+text(uscrime_tree)
+```
+
+### Prune the tree
+```{r}
+five_prune_uscrime_tree <- prune.tree(uscrime_tree, best = 5)
+summary(five_prune_uscrime_tree)
+
+four_prune_uscrime_tree <- prune.tree(uscrime_tree, best = 4)
+summary(four_prune_uscrime_tree)
+
+three_prune_uscrime_tree <- prune.tree(uscrime_tree, best = 3)
+summary(three_prune_uscrime_tree)
+
+two_prune_uscrime_tree <- prune.tree(uscrime_tree, best = 2)
+summary(two_prune_uscrime_tree)
+```
+As you can see, we tested four different values for the amount of leaf nodes. The mean deviance increases as we decrease the number of leaf nodes. Therefore, we can conclude that the original 6 leaf nodes was the optimal regression tree model.
+
+### Test quality of fit for uscrime tree (R-Squared) 
+```{r}
+prediction <- predict(uscrime_tree, newdata = uscrime_test_data)
+actual <- uscrime_test_data$Crime
+
+ss_total <- sum((actual - mean(actual))^2)
+ss_residual <- sum((actual - prediction)^2)
+
+cat("R-Squared:", 1 - (ss_residual / ss_total))
+```
+As you can see above, the R-squared value is 0.8116304. This is a fairly strong fit, because it is somewhat close to 1. 81.16% of the variance in the data set is explained by the regression tree model.
+
+### Qualitative takeaways
+1. Prob seems to be very important in this regression tree model. Every test had Prob as the first branching predictor.
+2. NW also seems to be very important in this regression tree model. Every test had NW as a branching predictor, though not as the first branching point.
+
+## Section B
+
+### To begin, we will make a random forest, and test multiple nodesizes and number of variables
+```{r, cache=FALSE}
+best_r_squared <- -Inf
+best_params <- list()
+
+for (m in 1:15) {
+  for (n in 1:15) {
+    uscrime_randomforest <- randomForest(Crime ~ ., data=uscrime_train_data,
+                                         importance = TRUE, nodesize = n, mtry = m)
+
+    prediction <- predict(uscrime_randomforest, newdata = uscrime_test_data)
+    actual <- uscrime_test_data$Crime
+
+    ss_total <- sum((actual - mean(actual))^2)
+    ss_residual <- sum((actual - prediction)^2)
+
+    r_squared <- 1 - sum((actual - prediction)^2) / sum((actual - mean(actual))^2)
+    
+    if (r_squared > best_r_squared) {
+      best_r_squared <- r_squared
+      best_params <- list(mtry = m, nodesize = n)
+    }
+  }
+}
+
+cat("Best R-Squared:", best_r_squared, "\n")
+cat("Best Parameters: mtry =", best_params$mtry, "nodesize =", best_params$nodesize, "\n")
+```
+As you can see above, the random forest R-squared value is 0.5184455. This is a fairly weak fit, because it is not close to 1. This was obtained using 2 as the node size, and 6 as the number of variables. 51.84% of the variance in the data set is explained by the random forest regression tree model.
+
+### Qualitative takeaways
+1. The random forest regression tree model does not provide a strong fit. The R-squared value, 0.5184455, is very low. This is much worse than the simple regression tree model.
+2. The optimal parameters for the random forest regression tree model (mtry = 6, nodesize = 2) could indicate that the model is over fitting.
+
+# Question 10.2
+An area in which a logistic regression model would be appropriate would be estimate the likelihood of a user completing a purchase on a website. Some predictors that could be used could be:
+
+1. Time spent on page
+2. Sequence of actions (What did they click to get to the current page)
+3. Device type
+4. Previous purchases
+5. Origin (How did they originally navigate to the page: ad, search, etc.)
+
+
+# Question 10.3
+
+### View germancredit data
+```{r}
+head(germancredit)
+```
+It appears that V21 is the response column, but the response is either 1 or 2. We should change it to 0 or 1.
+
+### Change V21 to use 0 or 1 instead of 1 or 2
+```{r}
+germancredit$V21 <- ifelse(germancredit$V21 == 1, 0, 1)
+
+head(germancredit$V21)
+```
+
+### Split the data into training and testing
+```{r}
+# 80% training and 20% testing
+germancredit_train_sample <- sample(1:nrow(germancredit), size = 0.8 * nrow(germancredit))
+germancredit_train_data <- germancredit[germancredit_train_sample, ]
+germancredit_test_data <- germancredit[-germancredit_train_sample, ]
+```
+
+### Create the logisitc regression model
+```{r}
+germancredit_model <- glm(V21 ~ ., data = germancredit_train_data, family=binomial(link="logit"))
+
+summary(germancredit_model)
+```
+As you can see above, many predictors have a high p-value. We will remove those that seem unnecessary.
+
+
+### Remove unnecesary predictors
+```{r}
+# Create new predictors for categorical variables
+germancredit_train_data$V1A14 <- ifelse(germancredit_train_data$V1 == "A14", 1, 0)
+germancredit_train_data$V3A34 <- ifelse(germancredit_train_data$V3 == "A34", 1, 0)
+germancredit_train_data$V4A41 <- ifelse(germancredit_train_data$V4 == "A41", 1, 0)
+germancredit_train_data$V4A410 <- ifelse(germancredit_train_data$V4 == "A410", 1, 0)
+germancredit_train_data$V4A43 <- ifelse(germancredit_train_data$V4 == "A43", 1, 0)
+germancredit_train_data$V6A64 <- ifelse(germancredit_train_data$V6 == "A64", 1, 0)
+germancredit_train_data$V6A65 <- ifelse(germancredit_train_data$V6 == "A65", 1, 0)
+germancredit_train_data$V14A143 <- ifelse(germancredit_train_data$V14 == "A143", 1, 0)
+
+germancredit_model_optimal <- glm(V21 ~ V1A14+V2+V3A34+V4A41+V4A410+V4A43+V5+V6A64+V6A65+V8+V14A143, 
+                            data = germancredit_train_data, family=binomial(link="logit"))
+
+summary(germancredit_model_optimal)
+```
+As you can see above, we created a new logistic regression model. We should test if it's better than the first
+
+### Test AIC to determine which model is better
+```{r}
+cat("Optimal AIC Relative Likelihood:", exp((AIC(germancredit_model_optimal) - AIC(germancredit_model))/2), "\n")
+cat("Original AIC Relative Likelihood:", exp((AIC(germancredit_model) - AIC(germancredit_model_optimal))/2), "\n")
+```
+As you can see above, the optimal model has a much higher relative likelihood. Therefore it can be concluded that it is the better model.
+
+### Create new predictors for categorical variables in test data
+```{r}
+germancredit_test_data$V1A14 <- ifelse(germancredit_test_data$V1 == "A14", 1, 0)
+germancredit_test_data$V3A34 <- ifelse(germancredit_test_data$V3 == "A34", 1, 0)
+germancredit_test_data$V4A41 <- ifelse(germancredit_test_data$V4 == "A41", 1, 0)
+germancredit_test_data$V4A410 <- ifelse(germancredit_test_data$V4 == "A410", 1, 0)
+germancredit_test_data$V4A43 <- ifelse(germancredit_test_data$V4 == "A43", 1, 0)
+germancredit_test_data$V6A64 <- ifelse(germancredit_test_data$V6 == "A64", 1, 0)
+germancredit_test_data$V6A65 <- ifelse(germancredit_test_data$V6 == "A65", 1, 0)
+germancredit_test_data$V14A143 <- ifelse(germancredit_test_data$V14 == "A143", 1, 0)
+```
+
+### Predict values
+```{r}
+predictions <- predict(germancredit_model_optimal, newdata = germancredit_test_data, type = "response")
+
+confusion_matrix <- table(Actual = germancredit_test_data$V21, Predicted = round(predictions))
+
+print(confusion_matrix)
+
+cat("Weighted error:", confusion_matrix[1, 2] * 5 + confusion_matrix[2, 1], "\n")
+```
+As you can see above, we predicted using the optimal model and tested using the test data. You can see the confusion matrix. The weighted error seems high. We need to find the optimal value for the threshold to minimize the weighted error.
+
+### Loop through thresholds to find minimum weighted error
+```{r}
+best_error <- Inf
+best_threshold <- Inf
+
+for (t in seq(0, 1, by = 0.001)) {
+  predicted <- ifelse(predictions > t, 1, 0)
+  
+  predicted <- factor(predicted, levels = c(0, 1))
+  actual <- factor(germancredit_test_data$V21, levels = c(0, 1))
+  
+  confusion_matrix <- table(Actual = actual, Predicted = predicted)
+  
+  false_positive <- confusion_matrix[1, 2]
+  false_negative <- confusion_matrix[2, 1]
+  
+  weighted_error <- false_positive * 5 + false_negative
+  
+  if (weighted_error < best_error) {
+      best_error <- weighted_error
+      best_threshold <- t
+  }
+}
+
+cat("Best weighted error:", best_error, "\n")
+cat("Best threshold:", best_threshold, "\n")
+```
+The lowest possible weighted error is 56. This is achieved using a threshold of 0.775.
+
+### Use threshold value to create final predictions
+```{r}
+predicted <- ifelse(predictions > best_threshold, 1, 0)
+
+confusion_matrix <- table(Actual = germancredit_test_data$V21, Predicted = predicted)
+
+print(confusion_matrix)
+
+cat("Weighted error:", confusion_matrix[1, 2] * 5 + confusion_matrix[2, 1], "\n")
+cat("Accuracy:", sum(diag(confusion_matrix)) / sum(confusion_matrix),"\n")
+cat("Specificity:", confusion_matrix[2, 2] / (confusion_matrix[2, 2] + confusion_matrix[1, 2]),"\n")
+```
+As you can see above, we have the final model using the optimal threshold value of 0.775. The weighted error is 56, which is quite low. Specificity is at 100%, because the cost of false positives far outweighs false negatives.

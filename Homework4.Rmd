@@ -1,0 +1,139 @@
+---
+title: "ISYE 6501 Homework 4"
+output: pdf_document
+date: "2025-02-06"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+temps <- read.table("temps.txt", header = TRUE, sep = "\t")
+set.seed(1)
+library(ggplot2)
+library(outliers)
+```
+# Question 7.1
+An area in which exponential smoothing would be appropriate would be forecasting daily server load on a website.
+
+The data needed for this would be historical daily server load; the more the better. This data could include anything from amount of users using the website every hour, or amount of api requests every hour.
+
+The value of alpha should be closer to 0. This is because the data is probably very volatile. The lower the alpha, the higher the reliance on old data, and the less chance of over fitting the model. We don't want to over fit the data, we just want to nail down the trend so we can forecast future values.
+
+---
+
+# Question 7.2
+### Pivot the data such that year is a column.
+```{r}
+temps_pivot <- reshape(temps, 
+                      varying = list(names(temps)[2:ncol(temps)]), 
+                      v.names = "Temperature", 
+                      timevar = "Year", 
+                      times = names(temps)[2:ncol(temps)], 
+                      direction = "long")
+
+head(temps_pivot)
+```
+
+### Perform grubs test to check for outliers
+```{r}
+# Check min value
+grubbs.test(temps_pivot$Temperature)
+
+# Check max value
+grubbs.test(temps_pivot$Temperature, opposite = TRUE)
+
+# Check min/max value
+grubbs.test(temps_pivot$Temperature, type = 11)
+```
+As you can see above, the p-value for all 3 tests is greater than 0.05, and therefore are not considered to be significant outliers. We fail to reject all null hypotheses and cannot accept any alternative hypotheses.
+
+### Apply exponential smoothing on the data
+```{r}
+# Create a time series object
+temps_ts <- ts(temps_pivot$Temperature, start = c(1996, 7), frequency = 123)
+
+# Perform exponential smoothing
+hw_model <- HoltWinters(temps_ts)
+
+# View the model
+plot(hw_model$fitted)
+```
+Above, you can see we use Holt Winters to exponentially smooth the data. We use beta = true, and gamma = true (default behavior of HoltWinters) because the data both has a trend, and is seasonal. Note that the trend line is flat, which indicates there is no trend present in the data. Going off this data alone, we could conclude that the summer end date has not gotten later. However, we will also perform cumulative sum change detection below to check.
+
+### Store the smoothed values back in the temps_pivot object
+```{r}
+# Add the first 123 points back to the smoothed data
+temps_smoothed <- c(temps_ts[1:123], hw_model$fitted[, 1])
+
+# Store the smoothed values
+temps_pivot$Temperature <- temps_smoothed
+
+head(temps_pivot$Temperature)
+```
+Note that we have to add back the first 123 points because the first cycle is not smoothed and not returned.
+
+### Compare un-smoothed with smoothed temperatures
+```{r}
+# Re pivot the data to compare
+temps_pivot_raw <- reshape(temps, 
+                      varying = list(names(temps)[2:ncol(temps)]), 
+                      v.names = "Temperature", 
+                      timevar = "Year", 
+                      times = names(temps)[2:ncol(temps)], 
+                      direction = "long")
+
+# Plot the data to compare
+plot(temps_pivot_raw$Temperature, type = "l", main = "unsmoothed vs. smoothed temperatures", col = "red", xlab = "Days", ylab = "Temperature")
+lines(temps_pivot$Temperature, col = "blue")
+legend("topright", legend = c("Unsmoothed", "Smoothed"), col = c("red", "blue"), lty = 1)
+```
+As we can see, the smoothed data has much less jumps (peaks/valleys).
+
+### Now, perform change detection using cumulative sum (from question 6.2 last week)
+### Calculate mean, and standard deviation, and then use standard deviation to calcule C (critical value) and T (threshold)
+```{r}
+mean <- mean(temps_pivot$Temperature)
+cat("Mean:", mean, "\n")
+
+standard_deviation <- sd(temps_pivot$Temperature)
+cat("Standard deviation:", standard_deviation, "\n")
+
+critical_value <- standard_deviation
+cat("Critical value:", critical_value, "\n")
+
+threshold <- 5 * standard_deviation
+cat("Threshold:", threshold, "\n")
+```
+
+### Loop over each year, calculate the cumulative sum, and add the summer end to temps_summer_end
+```{r}
+temps_summer_end <- data.frame()
+
+for (year in unique(temps_pivot$Year)) {
+  grouped_year_data <- temps_pivot[temps_pivot$Year == year, ]
+  
+  cum_sum <- cumsum(mean - grouped_year_data$Temperature - critical_value)
+  
+  summer_end <- min(which(abs(cum_sum) > threshold))
+  
+  date <- grouped_year_data$DAY[summer_end]
+  
+  temps_summer_end <- rbind(temps_summer_end, data.frame(Year = as.numeric(substring(year, 2)),
+                                                         Summer_End = summer_end, Date = date))
+}
+
+print(temps_summer_end)
+```
+
+### Graph the summer end dates, and put a line of best fit to see trend
+```{r}
+ggplot(data = temps_summer_end, aes(x = Year, y = Summer_End)) +
+  geom_point() +
+  geom_line() +
+  geom_text(aes(label = Date), vjust = -0.5, size = 3) +
+  geom_smooth(method = "lm", color = "red", linetype = "dashed", se = FALSE) +
+  labs(
+    x = "Year",
+    y = "Day of the Year"
+  )
+```
+As you can see, the line of best fit above is trending upward. From this we can conclude that summer's length has increased over time. It appears this trend is present throughout the data set and can therefore be concluded that the trend began before the data was collected. However, the slope of this line of best fit is only slightly positive. Therefore, we can conclude that the summer's length has only marginally increased and may be likely due to randomness in the data. Additionally, the trend line of the Holt Winters model was flat, indicating there is no trend. We may need more data to draw any conclusions.

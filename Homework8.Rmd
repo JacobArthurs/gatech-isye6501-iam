@@ -1,0 +1,86 @@
+---
+title: "ISYE 6501 Homework 8"
+date: "2025-03-06"
+output: pdf_document
+---
+
+```{r, set.seed(1), setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(cache = T)
+uscrime <- read.table("uscrime.txt", header = TRUE, sep = "\t")
+library(glmnet)
+```
+# Question 11.1
+
+## Stepwise
+
+### Create the regression model
+```{r}
+regression <- lm(Crime ~ ., data = uscrime)
+
+summary(regression)
+```
+
+### Perform stepwise selection
+```{r}
+stepwise_regression <- step(regression, direction = "both")
+
+summary(stepwise_regression)
+```
+
+As you can see above, the predictors stepwise selection chose were M + Ed + Po1 + M.F + U1 + U2 + Ineq + Prob. The R-squared of this regression is 0.7444. This is quite good, and represents that 74.44% of the variance in the data set is explained by the regression model.
+
+## LASSO
+
+### Seperate predictors and response
+```{r}
+predictors <- scale(as.matrix(uscrime[, -16]))
+head(predictors)
+
+responses <- uscrime$Crime
+head(responses)
+```
+
+### Before we create the regression, we need to find the best lambda using cross validation
+```{r}
+cv_lasso <- cv.glmnet(x = predictors, y = responses, alpha = 1)
+
+cv_lasso$lambda.min
+```
+As you can see above, the ideal lambda for this LASSO regression is 9.237784.
+
+### Create the regression model using the LASSO method
+```{r}
+lasso_regression <- glmnet(predictors, responses, alpha = 1, lambda = cv_lasso$lambda.min)
+
+coef(lasso_regression)[coef(lasso_regression)[, 1] != 0, , drop = FALSE]
+```
+As you can see above, the predictors LASSO selected were M + So + Ed + Po1 + M.F + NW + U1 + U2 + Wealth + Ineq + Prob. Out of these, Po1 + Ineq + Ed seem to be the most important predictors.
+
+## Elastic Net
+
+### Seperate predictors and response
+```{r}
+predictors <- scale(as.matrix(uscrime[, -16]))
+head(predictors)
+
+responses <- uscrime$Crime
+head(responses)
+```
+
+### Before we create the regression, we need to find the best lambda using cross validation
+```{r}
+cv_elastic <- cv.glmnet(x = predictors, y = responses, alpha = 0.5)
+
+cv_elastic$lambda.min
+```
+As you can see above, the ideal lambda for this Elastic Net regression is 24.42361.
+
+### Create the regression model using the LASSO method
+```{r}
+elastic_regression <- glmnet(predictors, responses, alpha = 0.5, lambda = cv_elastic$lambda.min)
+
+coef(elastic_regression)[coef(elastic_regression)[, 1] != 0, , drop = FALSE]
+```
+As you can see above, the predictors Elastic Net selected were M + So + Ed + Po1 + Po2 + + LF + M.F + NW + U1 + U2 + Ineq + Prob. Out of these, Po1 + Ineq seem to be the most important predictors.
+

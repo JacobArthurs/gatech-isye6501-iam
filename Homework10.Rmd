@@ -1,0 +1,149 @@
+---
+title: "ISYE 6501 Homework 10"
+date: "2025-03-20"
+output: pdf_document
+---
+
+```{r, set.seed(1), setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+breastcancer <- read.table("breast-cancer-wisconsin.data.txt", header = FALSE, sep = ",")
+```
+
+# Question 14.1
+
+## Question 14.1.1
+
+### View head of data
+```{r}
+head(breastcancer)
+```
+
+### Need to manipulate the data
+```{r}
+# Replace ? with NA
+breastcancer[breastcancer == "?"] <- NA
+
+# Convert columns to numeric
+breastcancer <- transform(breastcancer, V7 = as.numeric(V7))
+```
+V7 was a character field because it held "?", need to convert it to numeric
+
+
+### Check if missing data accounts for less than 5% of data
+```{r}
+sum(is.na(breastcancer)) / nrow(breastcancer)
+```
+As you can see, around 2% of the data is missing. We can proceed with filling in missing values.
+
+### Rows with missing data
+```{r}
+print(breastcancer[!complete.cases(breastcancer), ])
+```
+As you can see, there are 16 rows with missing data. All of which are missing column V7.
+
+### Perform mean imputation
+```{r}
+breastcancer_mean <- breastcancer
+
+# Find mean of column V7
+mean <- mean(breastcancer_mean$V7, na.rm = TRUE)
+
+# Set column V7 equal to the mean, where the value is missing
+breastcancer_mean$V7[is.na(breastcancer$V7)] <- mean
+
+head(breastcancer_mean)
+```
+
+### Perform mode imputation
+```{r}
+breastcancer_mode <- breastcancer
+
+# Find mode of column V7
+mode <- unique(na.omit(breastcancer$V7))[which.max(tabulate(match(breastcancer$V7, unique(na.omit(breastcancer$V7)))))]
+
+# Set column V7 equal to the mode, where the value is missing
+breastcancer_mode$V7[is.na(breastcancer$V7)] <- mode
+
+head(breastcancer_mode)
+```
+
+## Question 14.1.2
+
+### Build regression model
+```{r}
+# Train model using only data where column V7 is known
+train <- breastcancer[!is.na(breastcancer$V7), ]
+
+# Build model, column V7 is the response, all other columns are predictors
+regression <- lm(V7 ~ V1 + V2 + V3 + V4 + V5 + V6 + V8 + V9 + V10 + V11, data = train)
+
+summary(regression)
+```
+As you can see above we have successfully trained the model, but lets cut down the amount of variables to only those that are significant.
+
+### Simplify regression model
+```{r}
+regression <- lm(V7 ~  V3 + V4 + V5 + V8 + V9 + V11, data = train)
+
+summary(regression)
+```
+
+### Perform regression imputation
+```{r}
+breastcancer_regression <- breastcancer
+
+# Predict missing values using the regression model
+missing_rows <- which(is.na(breastcancer$V7))
+predicted_values <- predict(regression, newdata = breastcancer[missing_rows, c("V3", "V4", "V5", "V8", "V9", "V11")])
+
+# Impute the missing values in V7
+breastcancer_regression$V7[missing_rows] <- predicted_values
+
+head(breastcancer_regression)
+```
+
+## Question 14.1.3
+
+### Build regression model
+```{r}
+# Train model using only data where column V7 is known
+train <- breastcancer[!is.na(breastcancer$V7), ]
+
+# Build model, column V7 is the response, all other columns are predictors
+regression_perturbation <- lm(V7 ~ V1 + V2 + V3 + V4 + V5 + V6 + V8 + V9 + V10 + V11, data = train)
+
+summary(regression_perturbation)
+```
+As you can see above we have successfully trained the model, but lets cut down the amount of variables to only those that are significant.
+
+### Simplify regression model
+```{r}
+regression_perturbation <- lm(V7 ~  V3 + V4 + V5 + V8 + V9 + V11, data = train)
+
+summary(regression_perturbation)
+```
+
+### Perform regression imputation with perturbation
+```{r}
+breastcancer_regression_perturbation <- breastcancer
+
+# Predict missing values using the regression model
+missing_rows <- which(is.na(breastcancer$V7))
+predicted_values <- predict(regression, newdata = breastcancer[missing_rows, c("V3", "V4", "V5", "V8", "V9", "V11")])
+
+# Calculate random perturbation
+perturbation <- rnorm(length(predicted_values), mean = 0, sd = 0.1)
+
+# Impute the missing values in V7
+breastcancer_regression_perturbation$V7[missing_rows] <- predicted_values + perturbation
+
+head(breastcancer_regression_perturbation)
+```
+
+# Question 15.1
+
+At my job I work closely with college or university student data and scheduling. A situation where optimization would be appropriate could be scheduling students for exams at testing centers where seating, number of proctors, and available time slots are limited. Some data that may be needed for this could be:
+
+- Maximum number of seats available per time slot
+- Proctor availability
+- Time slot preferences from student

@@ -1,0 +1,123 @@
+---
+title: "ISYE 6501 Homework 6"
+output: pdf_document
+date: "2025-02-20"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+set.seed(1)
+uscrime <- read.table("uscrime.txt", header = TRUE, sep = "\t")
+library(outliers)
+```
+
+#Question 9.1
+
+### Perform grubs test to check for outliers
+```{r}
+# Check min value
+grubbs.test(uscrime$Crime)
+
+# Check max value
+grubbs.test(uscrime$Crime, opposite = TRUE)
+
+# Check min/max value
+grubbs.test(uscrime$Crime, type = 11)
+```
+As you can see above, the p-value for all 3 tests is greater than 0.05, and therefore are not considered to be significant outliers. We fail to reject all null hypotheses and cannot accept any alternative hypotheses.
+
+### Perform PCA
+```{r}
+pca_result <- prcomp(uscrime[, -16], scale = TRUE)
+summary(pca_result)
+```
+These results show the principal components of the uscrime data set. We need to select a subset of these to build a regression model. Based on the summary, we will use the first 5 principal components, as the standard deviation is greater than 1 and they account for 86.3% of the variance. PC5 is slightly below SD 1, but it will be included to increase the total variance accountance. Both of these criteria indicate the first 5 components are the most statistically significant components in the uscrime data set.
+
+### Create the regression model
+```{r}
+# Select the first 5 principal components
+pca_data <- data.frame(pca_result$x[, 1:5], Crime = uscrime[,16])
+
+# Create the regression model
+model_pca <- lm(Crime ~ ., data = pca_data)
+summary(model_pca)
+```
+These results show that this appears to be an effective regression model. The r-squared value is 60.19%, which is somewhat effective. The p-values of all the coefficients are also relatively low. PC3 has a much higher p-value than the other coefecients; we could remove this principal component, but removing this would cause the r-squared value to decrease. It is subjective, but I believe this set of principal components to be optimal.
+
+### Next, we need to use the model to predict ther crime for a city
+```{r}
+# Data from 8.2
+new_city <- data.frame(
+  M = 14.0, So = 0, Ed = 10.0, Po1 = 12.0, Po2 = 15.5, LF = 0.640,
+  M.F = 94.0, Pop = 150, NW = 1.1, U1 = 0.120, U2 = 3.6, 
+  Wealth = 3200, Ineq = 20.1, Prob = 0.04, Time = 39.0
+)
+
+# Put new_city into PCA space
+pca_new_city <- data.frame(predict(pca_result, new_city))
+
+# Predict new city crime
+pca_predicted_crime <- predict(model_pca, pca_new_city)
+
+cat("Predicted Crime:", pca_predicted_crime, "\n")
+cat("Actual Crime Range:", range(uscrime$Crime))
+```
+As you can see, the model predicted a value, 1388.926, which is a realistic prediction as it falls within the actual crime range.
+
+### Create linear regression model from last week for comparison
+```{r}
+model_reg <- lm(uscrime$Crime ~ M + Ed + Po1 + U2 + Ineq + Prob, data = uscrime)
+
+summary(model_reg)
+
+predicted_crime <- predict(model_reg, newdata = new_city)
+
+cat("Predicted Crime:", predicted_crime, "\n")
+cat("Actual Crime Range:", range(uscrime$Crime))
+```
+As you can see above, the model predicted a value, 1304.245, which is a realistic prediction as it falls within the actual crime range. This prediction is very similar to the PCA models prediction. Additionally, the R-squared value is higher than the PCA model, and therefore it may be better. We will evaluate further down.
+
+### Check quality of fit of regression model
+```{r}
+cat("Regular Model AIC:", AIC(model_reg), "\n")
+cat("Regular Model BIC:", BIC(model_reg), "\n")
+
+cat("PCA Model AIC:", AIC(model_pca), "\n")
+cat("PCA Model BIC:", BIC(model_pca), "\n")
+```
+These AIC/BIC models are meaningless without testing to see which is better. We will test the PCA model against the regular model.
+
+### Test AIC
+```{r}
+cat("PCA AIC Relative Likelihood:", exp(AIC(model_reg) - AIC(model_pca)), "\n")
+cat("Regular AIC Relative Likelihood:", exp(AIC(model_pca) - AIC(model_reg)), "\n")
+```
+As you can see, the relative likelihood of PCA, 2.420022e-08, is much lower than 1. The relative likelihood of the model from last week, 41321941, is much greater than 1. This implies that the model from last week is very likely to be better than the PCA model.
+
+### Test BIC
+```{r}
+cat("PCA BIC Relative Likelihood:", abs(BIC(model_pca) - BIC(model_reg)), "\n")
+cat("Regular BIC Relative Likelihood:", abs(BIC(model_reg) - BIC(model_pca)), "\n")
+```
+As you can see, the relative likelihood of both models is 15.68676. This test is inconclusive, but they are both greater than 10 which indicates a satisfactory model.
+
+### Quality of fit
+```{r}
+summary_pca <- summary(model_pca)
+
+cat("Adjusted R-Squared:", summary_pca$adj.r.squared, "\n")
+cat("F-Statistic:", summary_pca$fstatistic, "\n")
+cat("Residual Standard Error:", summary_pca$sigma, "\n")
+
+summary_reg <- summary(model_reg)
+
+cat("Adjusted R-Squared:", summary_reg$adj.r.squared, "\n")
+cat("F-Statistic:", summary_reg$fstatistic, "\n")
+cat("Residual Standard Error:", summary_reg$sigma, "\n")
+```
+- The r-squared value of the regular model, 0.7307463, is less than the PCA model, 0.601925. This seems to indicate that the regular model is a better fit.
+- The f-statistic value of the regular model, 21.8071, is higher than the PCA model, 14.91122. This seems to indicate that the regular model is a better fit.
+- The residual standard error value of the regular model, 200.6899, is less than the PCA model, 244.0209. This seems to indicate that regular model is a better fit.
+
+### Conclusion
+Based on the criteria I have chosen, r-squared, AIC, f-statistic, and residual standard error, the model created last week without PCA is superior to the model created with PCA. Although, more data is needed to make any contrete conclusion on which model is better.
